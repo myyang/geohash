@@ -21,20 +21,25 @@ func Encode(latitude, longitude float64, precision int) string {
 		return ""
 	}
 
+	minLat, maxLat, minLng, maxLng := MinLat, MaxLat, MinLng, MaxLng
 	var bf bytes.Buffer
-	latChan := l2bChan(latitude, MaxLat, MinLat, precision*HalfByteWidth)
-	lngChan := l2bChan(longitude, MaxLng, MinLng, precision*HalfByteWidth)
 
 	resultLen, ch, byteCount, alter := 0, 0, 0, true
 	for resultLen < precision {
 		switch alter {
 		case true:
-			if v := <-lngChan; v == 1 {
+			if midLng := (minLng + maxLng) / 2; midLng < longitude {
 				ch |= Bits[byteCount]
+				minLng = midLng
+			} else {
+				maxLng = midLng
 			}
 		case false:
-			if v := <-latChan; v == 1 {
+			if midLat := (minLat + maxLat) / 2; midLat < latitude {
 				ch |= Bits[byteCount]
+				minLat = midLat
+			} else {
+				maxLat = midLat
 			}
 		}
 		alter = !alter
@@ -49,31 +54,13 @@ func Encode(latitude, longitude float64, precision int) string {
 	return bf.String()
 }
 
-func l2bChan(loc, max, min float64, subPrecision int) <-chan int {
-	rchan := make(chan int, subPrecision)
-	go func() {
-		for subPrecision > 0 {
-			if mid := (max + min) / 2.0; mid < loc {
-				rchan <- 1
-				min = mid
-			} else {
-				rchan <- 0
-				max = mid
-			}
-			subPrecision--
-		}
-	}()
-	return rchan
-}
-
 // Decode given string and return (lat, lng) pair
 func Decode(hashv string, precision int) (float64, float64) {
 	hashb := []byte(hashv)
 	if precision <= 0 {
 		precision = len(hashb)
 	}
-	toLatChan, toLngChan := make(chan int, precision), make(chan int, precision)
-	latChan, lngChan := b2lChan(toLatChan, MaxLat, MinLat), b2lChan(toLngChan, MaxLng, MinLng)
+	minLat, maxLat, minLng, maxLng := MinLat, MaxLat, MinLng, MaxLng
 	alter := true
 	for i := 0; i < len(hashb); i++ {
 		byteCount := 0
@@ -86,38 +73,22 @@ func Decode(hashv string, precision int) (float64, float64) {
 			}
 			switch alter {
 			case true:
-				toLngChan <- b
+				if b == 1 {
+					minLng = (maxLng + minLng) / 2
+				} else {
+					maxLng = (maxLng + minLng) / 2
+				}
 			case false:
-				toLatChan <- b
+				if b == 1 {
+					minLat = (maxLat + minLat) / 2
+				} else {
+					maxLat = (maxLat + minLat) / 2
+				}
 			}
 			alter = !alter
 			byteCount++
 		}
 	}
-	close(toLngChan)
-	close(toLatChan)
-	lat, lng := <-latChan, <-lngChan
+	lat, lng := (maxLat+minLat)/2, (maxLng+minLng)/2
 	return roundFloat64(lat, precision), roundFloat64(lng, precision)
-}
-
-func b2lChan(bChan chan int, max, min float64) <-chan float64 {
-	rchan := make(chan float64)
-	go func() {
-		mid := 0.0
-		for {
-			b, ok := <-bChan
-			if !ok {
-				break
-			}
-			mid = (max + min) / 2
-			if b == 1 {
-				min = mid
-			} else {
-				max = mid
-			}
-		}
-		mid = (max + min) / 2
-		rchan <- mid
-	}()
-	return rchan
 }
