@@ -22,7 +22,7 @@ func Encode(latitude, longitude float64, precision int) string {
 	}
 
 	minLat, maxLat, minLng, maxLng := MinLat, MaxLat, MinLng, MaxLng
-	var bf bytes.Buffer
+	bf := make([]byte, 0, precision)
 
 	resultLen, ch, byteCount, alter := 0, 0, 0, true
 	for resultLen < precision {
@@ -46,12 +46,12 @@ func Encode(latitude, longitude float64, precision int) string {
 		if byteCount < ByteWidth {
 			byteCount++
 		} else {
-			bf.WriteByte(B32[ch])
+			bf = append(bf, B32[ch])
 			ch, byteCount, resultLen = 0, 0, resultLen+1
 		}
 	}
 
-	return bf.String()
+	return string(bf[:])
 }
 
 // Decode given string and return (lat, lng) pair
