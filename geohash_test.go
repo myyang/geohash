@@ -3,37 +3,148 @@ package geohash
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"testing"
 )
 
-func TestEncode(t *testing.T) {
-	actual, expected := "", ""
-	actual, expected = Encode(12.04512315, 118.20385763, 9), "wdhh9b9rv"
-	if !reflect.DeepEqual(expected, actual) {
-		_, file, line, _ := runtime.Caller(0)
-		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
-		t.FailNow()
+func TestLatErr(t *testing.T) {
+	tr := []struct {
+		Input  int
+		Out    float64
+		Errstr string
+	}{
+		{1, 22.5, "error at bit 1"},
+		{2, 2.81, "error at bit 2"},
+		{3, 0.703, "error at bit 3"},
+		{4, 0.0879, "error at bit 4"},
+		{5, 0.02197, "error at bit 5"},
+		{6, 0.002747, "error at bit 6"},
+		{7, 0.0006866, "error at bit 7"},
+		{8, 8.583e-05, "error at bit 8"},
+		{9, 2.1458e-05, "error at bit 9"},
+		{10, 2.6822e-06, "error at bit 10"},
+		{11, 6.7055e-07, "error at bit 11"},
+		{12, 8.3819e-08, "error at bit 12"},
 	}
 
-	actual, expected = Encode(-2, -3, 1), "7"
-	if !reflect.DeepEqual(expected, actual) {
-		_, file, line, _ := runtime.Caller(0)
-		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
-		t.FailNow()
+	for _, v := range tr {
+		if r := latErr(v.Input); v.Out != r {
+			fmt.Println(v.Errstr, v.Out, " != ", r)
+			t.FailNow()
+		}
+	}
+}
+
+func TestLngErr(t *testing.T) {
+	tr := []struct {
+		Input  int
+		Out    float64
+		Errstr string
+	}{
+		{1, 22.5, "error at len 1"},
+		{2, 5.63, "error at len 2"},
+		{3, 0.703, "error at len 3"},
+		{4, 0.1758, "error at len 4"},
+		{5, 0.02197, "error at len 5"},
+		{6, 0.005493, "error at len 6"},
+		{7, 0.0006866, "error at len 7"},
+		{8, 0.00017166, "error at len 8"},
+		{9, 2.1458e-05, "error at len 9"},
+		{10, 5.3644e-06, "error at len 10"},
+		{11, 6.7055e-07, "error at len 11"},
+		{12, 1.67638e-07, "error at len 12"},
 	}
 
-	actual, expected = Encode(-2, -3, 6), "7ztuee"
-	if !reflect.DeepEqual(expected, actual) {
-		_, file, line, _ := runtime.Caller(0)
-		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+	for _, v := range tr {
+		if r := lngErr(v.Input); v.Out != r {
+			fmt.Println(v.Errstr, v.Out, " != ", r)
+			t.FailNow()
+		}
+	}
+}
+
+func TestCryptorInf(t *testing.T) {
+	c1 := NewGeoHashWithDefaultKey()
+	c2 := NewGeoHash("abcdefghijklmnopqrstuvwxyz123456")
+	switch c1.(type) {
+	case GeoCryptor:
+	default:
+		fmt.Printf("c1 is not type of GeoCryptor\n")
+		t.FailNow()
+	}
+	switch c2.(type) {
+	case GeoCryptor:
+	default:
+		fmt.Printf("c2 is not type of GeoCryptor\n")
 		t.FailNow()
 	}
 }
 
+func TestEncodeGeoHash(t *testing.T) {
+	cryptor := NewGeoHashWithDefaultKey()
+	actual, expected := "", ""
+
+	actual, expected = cryptor.Encode(12.04512315, 118.20385763, 9), "wdhh9b9rv"
+	if actual != expected {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+		t.FailNow()
+	}
+
+	actual, expected = cryptor.Encode(-2, -3, 1), "7"
+	if actual != expected {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+		t.FailNow()
+	}
+
+	actual, expected = cryptor.Encode(-2, -3, 6), "7ztuee"
+	if actual != expected {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+		t.FailNow()
+	}
+
+	latErr, lngErr, expLatErr, expLngErr := 0.0, 0.0, 0.0, 0.0
+
+	actual, latErr, lngErr = cryptor.EncodeWithErr(12.04512315, 118.20385763, 9)
+	expected, expLatErr, expLngErr = "wdhh9b9rv", 2.1458e-05, 2.1458e-05
+	if actual != expected || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+		t.FailNow()
+	}
+
+	actual, latErr, lngErr = cryptor.EncodeWithErr(-2, -3, 1)
+	expected, expLatErr, expLngErr = "7", 22.5, 22.5
+	if actual != expected || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+		t.FailNow()
+	}
+
+	actual, latErr, lngErr = cryptor.EncodeWithErr(-2, -3, 6)
+	expected, expLatErr, expLngErr = "7ztuee", 0.002747, 0.005493
+	if actual != expected || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+		t.FailNow()
+	}
+
+	r := cryptor.EncodeAsBox(-2, -3, 6)
+	latErr, lngErr = r.ErrPair()
+	if r.Geohash() != expected || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
+		t.FailNow()
+	}
+
+}
+
 func TestDecode(t *testing.T) {
-	lat, lng := Decode("wdhh9b9rv", 8)
+	cryptor := NewGeoHashWithDefaultKey()
+
+	lat, lng := cryptor.Decode("wdhh9b9rv", 8)
 	explat, explng := 12.04511404, 118.20385695
 	if lat != explat && lng != explng {
 		_, file, line, _ := runtime.Caller(0)
@@ -41,7 +152,7 @@ func TestDecode(t *testing.T) {
 		t.FailNow()
 	}
 
-	lat, lng = Decode("7", 1)
+	lat, lng = cryptor.Decode("7", 1)
 	explat, explng = -22.5, -22.5
 	if lat != explat && lng != explng {
 		_, file, line, _ := runtime.Caller(0)
@@ -49,7 +160,7 @@ func TestDecode(t *testing.T) {
 		t.FailNow()
 	}
 
-	lat, lng = Decode("7ztuee", 6)
+	lat, lng = cryptor.Decode("7ztuee", 6)
 	explat, explng = -2.002258, -3.004761
 	if lat != explat && lng != explng {
 		_, file, line, _ := runtime.Caller(0)
@@ -57,10 +168,48 @@ func TestDecode(t *testing.T) {
 		t.FailNow()
 	}
 
+	latErr, lngErr, expLatErr, expLngErr := 0.0, 0.0, 0.0, 0.0
+
+	lat, lng, latErr, lngErr = cryptor.DecodeWithErr("wdhh9b9rv", 8)
+	explat, explng, expLatErr, expLngErr = 12.04511404, 118.20385695, 8.583e-05, 0.00017166
+	if lat != explat || lng != explng || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf(
+			"%s:%d:\n\n\texp: (%v, %v) and err pair (%v, %v)\n\n\tgot: (%v, %v) and err pair (%v, %v)\n\n",
+			filepath.Base(file), line, explat, explng, expLatErr, expLngErr, lat, lng, latErr, lngErr)
+		t.FailNow()
+	}
+
+	lat, lng, latErr, lngErr = cryptor.DecodeWithErr("7", 1)
+	explat, explng, expLatErr, expLngErr = -22.5, -22.5, 22.5, 22.5
+	if lat != explat || lng != explng || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: (%v, %v)\n\n\tgot: (%v, %v)\n\n", filepath.Base(file), line, explat, explng, lat, lng)
+		t.FailNow()
+	}
+
+	lat, lng, latErr, lngErr = cryptor.DecodeWithErr("7ztuee", 6)
+	explat, explng, expLatErr, expLngErr = -2.002258, -3.004761, 0.002747, 0.005493
+	if lat != explat || lng != explng || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: (%v, %v)\n\n\tgot: (%v, %v)\n\n", filepath.Base(file), line, explat, explng, lat, lng)
+		t.FailNow()
+	}
+
+	r := cryptor.DecodeAsBox("7ztuee", 6)
+	latErr, lngErr = r.ErrPair()
+	lat, lng = r.GetCenter()
+	if lat != explat || lng != explng || latErr != expLatErr || lngErr != expLngErr {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: (%v, %v)\n\n\tgot: (%v, %v)\n\n", filepath.Base(file), line, explat, explng, lat, lng)
+		t.FailNow()
+	}
 }
 
 func TestDecodeError(t *testing.T) {
-	lat, lng := Decode("aaaaaaa", 7)
+	cryptor := NewGeoHashWithDefaultKey()
+
+	lat, lng := cryptor.Decode("aaaaaaa", 7)
 	explat, explng := 89.9993134, 179.9993134
 	if lat != explat && lng != explng {
 		_, file, line, _ := runtime.Caller(0)
@@ -71,14 +220,16 @@ func TestDecodeError(t *testing.T) {
 
 func BenchmarkEncode(b *testing.B) {
 	b.ReportAllocs()
+	cryptor := NewGeoHashWithDefaultKey()
 	for i := 0; i < b.N; i++ {
-		Encode(12.04512315, 118.20385763, 9)
+		cryptor.Encode(12.04512315, 118.20385763, 12)
 	}
 }
 
 func BenchmarkDecode(b *testing.B) {
 	b.ReportAllocs()
+	cryptor := NewGeoHashWithDefaultKey()
 	for i := 0; i < b.N; i++ {
-		Decode("wdhh9b9rv", 8)
+		cryptor.Decode("wdhh9b9rv", 12)
 	}
 }
