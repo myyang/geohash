@@ -7,5 +7,3 @@ go:
 script:
     - go test .
     - go test -bench .
-    - GODEBUG=allocfreetrace=1 go test -bench .
-
