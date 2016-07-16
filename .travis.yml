@@ -1,0 +1,11 @@
+language: go
+
+go:
+    - 1.6.2
+    - tip
+
+script:
+    - go test .
+    - go test -bench .
+    - GODEBUG=allocfreetrace=1 go test -bench .
+
