@@ -1,6 +1,7 @@
 package geohash
 
 import "bytes"
+import "fmt"
 
 // fix constants
 const (
@@ -26,10 +27,18 @@ func encode36(latitude, longitude float64, key []byte, precision int) (
 		for (maxLat - unitLat) > latitude {
 			clat++
 			maxLat -= unitLat
+			// float number present limitation &&
+			// we divide unit by 6 which contains 3 leads to repeating decimal
+			if clat == 6 && maxLat-latitude < 10e-9 {
+				clat--
+			}
 		}
 		for (minLng + unitLng) < longitude {
 			clng++
 			minLng += unitLng
+			if clng == 6 && maxLat-latitude < 10e-9 {
+				clat--
+			}
 		}
 		// update square
 		minLat, maxLng = maxLat-unitLat, minLng+unitLng
@@ -140,7 +149,11 @@ func (g *GeoHash36) Neighbors(value string, precision int) []BoundingBox {
 			MaxLat: lb.MaxLat + latUnit, MinLat: lb.MinLat + latUnit,
 			MaxLng: lb.MaxLng + lngUnit, MinLng: lb.MinLng + lngUnit,
 			LatErr: lb.LatErr, LngErr: lb.LngErr}
-		lat, lng := r.GetCenter()
+		lat, lng, err := r.GetCenter()
+		if err != nil {
+			fmt.Printf("Neighbor error: %v\n", err)
+			return nil
+		}
 		r.Hash = g.Encode(lat, lng, precision)
 		return r
 	}

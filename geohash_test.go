@@ -3,6 +3,7 @@ package geohash
 import (
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 )
@@ -133,7 +134,7 @@ func TestEncodeGeoHash(t *testing.T) {
 
 	r := cryptor.EncodeAsBox(-2, -3, 6)
 	latErr, lngErr = r.ErrPair()
-	if r.Geohash() != expected || latErr != expLatErr || lngErr != expLngErr {
+	if h, err := r.Geohash(); err != nil || h != expected || latErr != expLatErr || lngErr != expLngErr {
 		_, file, line, _ := runtime.Caller(0)
 		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, expected, actual)
 		t.FailNow()
@@ -169,6 +170,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	latErr, lngErr, expLatErr, expLngErr := 0.0, 0.0, 0.0, 0.0
+	var err error
 
 	lat, lng, latErr, lngErr = cryptor.DecodeWithErr("wdhh9b9rv", 8)
 	explat, explng, expLatErr, expLngErr = 12.04511404, 118.20385695, 8.583e-05, 0.00017166
@@ -198,8 +200,8 @@ func TestDecode(t *testing.T) {
 
 	r := cryptor.DecodeAsBox("7ztuee", 6)
 	latErr, lngErr = r.ErrPair()
-	lat, lng = r.GetCenter()
-	if lat != explat || lng != explng || latErr != expLatErr || lngErr != expLngErr {
+	lat, lng, err = r.GetCenter()
+	if err != nil || lat != explat || lng != explng || latErr != expLatErr || lngErr != expLngErr {
 		_, file, line, _ := runtime.Caller(0)
 		fmt.Printf("%s:%d:\n\n\texp: (%v, %v)\n\n\tgot: (%v, %v)\n\n", filepath.Base(file), line, explat, explng, lat, lng)
 		t.FailNow()
@@ -218,6 +220,62 @@ func TestDecodeError(t *testing.T) {
 	}
 }
 
+func TestNeighbors(t *testing.T) {
+	cryptor := NewGeoHashWithDefaultKey()
+	got, exp := []string{}, []string{}
+	neighbors := cryptor.Neighbors("7ztuee", 6)
+
+	exp = []string{"7ztue6", "7ztued", "7ztuef", "7ztue7", "7ztueg", "7ztuek", "7ztues", "7ztueu"}
+	for _, v := range neighbors {
+		if v.(*LocationBox) == nil {
+			continue
+		}
+		h, err := v.Geohash()
+		if err == nil {
+			got = append(got, h)
+		}
+	}
+	if !reflect.DeepEqual(exp, got) {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, exp, got)
+		t.FailNow()
+	}
+
+	neighbors = cryptor.Neighbors("eb", 2)
+	got, exp = []string{}, []string{"7x", "7z", "kp", "e8", "s0", "e9", "ec", "s1"}
+	for _, v := range neighbors {
+		if v.(*LocationBox) == nil {
+			continue
+		}
+		h, err := v.Geohash()
+		if err == nil {
+			got = append(got, h)
+		}
+	}
+	if !reflect.DeepEqual(exp, got) {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, exp, got)
+		t.FailNow()
+	}
+
+	neighbors = cryptor.Neighbors("gz", 2)
+	got, exp = []string{}, []string{"gw", "gy", "un", "gx", "up"}
+	for _, v := range neighbors {
+		if v.(*LocationBox) == nil {
+			continue
+		}
+		h, err := v.Geohash()
+		if err == nil {
+			got = append(got, h)
+		}
+	}
+	if !reflect.DeepEqual(exp, got) {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, exp, got)
+		t.FailNow()
+	}
+}
+
 func BenchmarkEncode(b *testing.B) {
 	b.ReportAllocs()
 	cryptor := NewGeoHashWithDefaultKey()
@@ -231,5 +289,13 @@ func BenchmarkDecode(b *testing.B) {
 	cryptor := NewGeoHashWithDefaultKey()
 	for i := 0; i < b.N; i++ {
 		cryptor.Decode("wdhh9b9rv", 12)
+	}
+}
+
+func BenchmarkNeighbors(b *testing.B) {
+	b.ReportAllocs()
+	cryptor := NewGeoHashWithDefaultKey()
+	for i := 0; i < b.N; i++ {
+		cryptor.Neighbors("7ztuee", 6)
 	}
 }

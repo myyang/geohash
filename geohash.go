@@ -2,6 +2,8 @@ package geohash
 
 import "bytes"
 
+import "log"
+
 // fixed constants
 const (
 	ByteWidth     int = 4
@@ -172,12 +174,16 @@ func (g *GeoHash) DecodeAsBox(value string, precision int) BoundingBox {
 func (g *GeoHash) Neighbors(value string, precision int) []BoundingBox {
 	lb := g.DecodeAsBox(value, precision)
 	neighbor := func(lb *LocationBox, dlat, dlng int) *LocationBox {
-		latUnit, lngUnit := (lb.MaxLat-lb.MinLat)*float64(dlat), (lb.MaxLng-lb.MinLng)*float64(dlng)
+		latUnit, lngUnit := lb.LatErr*2*float64(dlat), lb.LngErr*2*float64(dlng)
 		r := &LocationBox{
 			MaxLat: lb.MaxLat + latUnit, MinLat: lb.MinLat + latUnit,
 			MaxLng: lb.MaxLng + lngUnit, MinLng: lb.MinLng + lngUnit,
-			LatErr: lb.LatErr, LngErr: lb.LngErr}
-		lat, lng := r.GetCenter()
+			LatErr: lb.LatErr, LngErr: lb.LngErr, Precision: lb.Precision}
+		lat, lng, err := r.GetCenter()
+		if err != nil {
+			log.Printf("Erro while get neighbor <%v>\n", err)
+			return nil
+		}
 		r.Hash = g.Encode(lat, lng, precision)
 		return r
 	}

@@ -63,6 +63,16 @@ func TestEncode36(t *testing.T) {
 		t.FailNow()
 	}
 
+	exp = "XXrPPPPPPP"
+	got = cryptor.Encode(-89, 179, 10)
+
+	if exp != got {
+		_, file, line, _ := runtime.Caller(0)
+		fmt.Printf(
+			"%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n",
+			filepath.Base(file), line, exp, got)
+		t.FailNow()
+	}
 }
 
 func TestDecode36(t *testing.T) {
@@ -106,5 +116,13 @@ func BenchmarkDecode36(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		cryptor.Decode("H2RXqLHNG6", 8)
+	}
+}
+
+func BenchmarkNeighbors36(b *testing.B) {
+	cryptor := NewGeoHash36WithDefaultKey()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		cryptor.Neighbors("H2RXqLHNG6", 8)
 	}
 }
