@@ -11,10 +11,14 @@ Geohash
 Example
 -------
 
+Install package:
+
 .. code:: shell 
 
     go get github.com/myyang/geohash
 
+
+Example:
 
 .. code:: golang
 
