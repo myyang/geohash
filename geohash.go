@@ -101,8 +101,8 @@ func lngErr(l int) float64 {
 	return roundFloat64(360.0/float64(b), l)
 }
 
-// NewGeoHashWithDefaultKey return a geohash cryptor with defined key
-func NewGeoHashWithDefaultKey() GeoCryptor {
+// NewDefaultGeoHash return a geohash cryptor with defined key
+func NewDefaultGeoHash() GeoCryptor {
 	return NewGeoHash(DefaultB32Str)
 }
 

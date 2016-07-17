@@ -27,7 +27,7 @@ var degreeErr = []struct {
 }
 
 func TestEncode36(t *testing.T) {
-	cryptor := NewGeoHash36WithDefaultKey()
+	cryptor := NewDefaultGeoHash36()
 	exp, got := "", ""
 
 	exp = "bdrdC26BqH"
@@ -76,7 +76,7 @@ func TestEncode36(t *testing.T) {
 }
 
 func TestDecode36(t *testing.T) {
-	cryptor := NewGeoHash36WithDefaultKey()
+	cryptor := NewDefaultGeoHash36()
 	lat, lng := 0.0, 0.0
 	explat, explng := 0.0, 0.0
 
@@ -104,7 +104,7 @@ func TestDecode36(t *testing.T) {
 }
 
 func BenchmarkEncode36(b *testing.B) {
-	cryptor := NewGeoHash36WithDefaultKey()
+	cryptor := NewDefaultGeoHash36()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		cryptor.Encode(25.03297033, 121.56542031, 10)
@@ -112,7 +112,7 @@ func BenchmarkEncode36(b *testing.B) {
 }
 
 func BenchmarkDecode36(b *testing.B) {
-	cryptor := NewGeoHash36WithDefaultKey()
+	cryptor := NewDefaultGeoHash36()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		cryptor.Decode("H2RXqLHNG6", 8)
@@ -120,7 +120,7 @@ func BenchmarkDecode36(b *testing.B) {
 }
 
 func BenchmarkNeighbors36(b *testing.B) {
-	cryptor := NewGeoHash36WithDefaultKey()
+	cryptor := NewDefaultGeoHash36()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		cryptor.Neighbors("H2RXqLHNG6", 8)

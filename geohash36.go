@@ -70,8 +70,8 @@ func decode36(hashv string, key []byte, precision int) (
 		maxLat, minLat, maxLng, minLng, uLat, uLng
 }
 
-// NewGeoHash36WithDefaultKey generate geohash36 cryptor with default key
-func NewGeoHash36WithDefaultKey() GeoCryptor {
+// NewDefaultGeoHash36 generate geohash36 cryptor with default key
+func NewDefaultGeoHash36() GeoCryptor {
 	return NewGeoHash36(DefaultB36Str)
 }
 

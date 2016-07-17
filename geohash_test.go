@@ -65,7 +65,7 @@ func TestLngErr(t *testing.T) {
 }
 
 func TestCryptorInf(t *testing.T) {
-	c1 := NewGeoHashWithDefaultKey()
+	c1 := NewDefaultGeoHash()
 	c2 := NewGeoHash("abcdefghijklmnopqrstuvwxyz123456")
 	switch c1.(type) {
 	case GeoCryptor:
@@ -82,7 +82,7 @@ func TestCryptorInf(t *testing.T) {
 }
 
 func TestEncodeGeoHash(t *testing.T) {
-	cryptor := NewGeoHashWithDefaultKey()
+	cryptor := NewDefaultGeoHash()
 	actual, expected := "", ""
 
 	actual, expected = cryptor.Encode(12.04512315, 118.20385763, 9), "wdhh9b9rv"
@@ -143,7 +143,7 @@ func TestEncodeGeoHash(t *testing.T) {
 }
 
 func TestDecode(t *testing.T) {
-	cryptor := NewGeoHashWithDefaultKey()
+	cryptor := NewDefaultGeoHash()
 
 	lat, lng := cryptor.Decode("wdhh9b9rv", 8)
 	explat, explng := 12.04511404, 118.20385695
@@ -209,7 +209,7 @@ func TestDecode(t *testing.T) {
 }
 
 func TestDecodeError(t *testing.T) {
-	cryptor := NewGeoHashWithDefaultKey()
+	cryptor := NewDefaultGeoHash()
 
 	lat, lng := cryptor.Decode("aaaaaaa", 7)
 	explat, explng := 89.9993134, 179.9993134
@@ -221,7 +221,7 @@ func TestDecodeError(t *testing.T) {
 }
 
 func TestNeighbors(t *testing.T) {
-	cryptor := NewGeoHashWithDefaultKey()
+	cryptor := NewDefaultGeoHash()
 	got, exp := []string{}, []string{}
 	neighbors := cryptor.Neighbors("7ztuee", 6)
 
@@ -278,7 +278,7 @@ func TestNeighbors(t *testing.T) {
 
 func BenchmarkEncode(b *testing.B) {
 	b.ReportAllocs()
-	cryptor := NewGeoHashWithDefaultKey()
+	cryptor := NewDefaultGeoHash()
 	for i := 0; i < b.N; i++ {
 		cryptor.Encode(12.04512315, 118.20385763, 12)
 	}
@@ -286,7 +286,7 @@ func BenchmarkEncode(b *testing.B) {
 
 func BenchmarkDecode(b *testing.B) {
 	b.ReportAllocs()
-	cryptor := NewGeoHashWithDefaultKey()
+	cryptor := NewDefaultGeoHash()
 	for i := 0; i < b.N; i++ {
 		cryptor.Decode("wdhh9b9rv", 12)
 	}
@@ -294,7 +294,7 @@ func BenchmarkDecode(b *testing.B) {
 
 func BenchmarkNeighbors(b *testing.B) {
 	b.ReportAllocs()
-	cryptor := NewGeoHashWithDefaultKey()
+	cryptor := NewDefaultGeoHash()
 	for i := 0; i < b.N; i++ {
 		cryptor.Neighbors("7ztuee", 6)
 	}
